@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API DOM</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .color-option {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .size-option {
+            display: inline-block;
+            padding: 5px 10px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="titulo">Este es un título</h1>
+    <p id="parrafo">Este es un párrafo de ejemplo.</p>
+
+    <div id="colorOptions">
+        <div class="color-option" style="background-color: red;" onclick="selectColor('red')"></div>
+        <div class="color-option" style="background-color: blue;" onclick="selectColor('blue')"></div>
+        <div class="color-option" style="background-color: green;" onclick="selectColor('green')"></div>
+        <div class="color-option" style="background-color: yellow;" onclick="selectColor('yellow')"></div>
+        <div class="color-option" style="background-color: orange;" onclick="selectColor('orange')"></div>
+        <div class="color-option" style="background-color: purple;" onclick="selectColor('purple')"></div>
+    </div>
+
+    <div id="sizeOptions">
+        <div class="size-option" onclick="decreaseSize()">Pequeño</div>
+        <div class="size-option" onclick="selectSize('20px')">Mediano</div>
+        <div class="size-option" onclick="increaseSize()">Grande</div>
+    </div>
+
+    <button onclick="toggleBackground()">Cambiar Fondo</button>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:3000');
+        let fontSize = 20;  // Tamaño inicial de la fuente
+        let backgroundColor = 'white';  // Color inicial del fondo
+
+        ws.onopen = () => {
+            console.log('Conectado al servidor WebSocket');
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Mensaje recibido:', data);
+
+            // Manejo de cambios de color
+            if (data.type === 'colorChange') {
+                const color = data.color;
+                document.getElementById('titulo').style.color = color;
+                document.getElementById('parrafo').style.color = color;
+            }
+            // Manejo de cambios de tamaño
+            else if (data.type === 'sizeChange') {
+                const size = data.size;
+                document.getElementById('titulo').style.fontSize = size;
+                document.getElementById('parrafo').style.fontSize = size;
+            }
+            // Manejo de cambios de fondo
+            else if (data.type === 'backgroundChange') {
+                const bgColor = data.backgroundColor;
+                document.body.style.backgroundColor = bgColor;
+                updateContrastColor(bgColor);
+            }
+        };
+
+        // Enviar mensaje de cambio de color al servidor
+        function selectColor(color) {
+            const message = {
+                type: 'colorChange',
+                color: color
+            };
+            ws.send(JSON.stringify(message));
+        }
+
+        // Enviar mensaje de cambio de tamaño al servidor
+        function selectSize(size) {
+            const message = {
+                type: 'sizeChange',
+                size: size
+            };
+            ws.send(JSON.stringify(message));
+        }
+
+        // Aumentar tamaño de fuente y enviar mensaje al servidor
+        function increaseSize() {
+            fontSize += 2;
+            const size = fontSize + 'px';
+            const message = {
+                type: 'sizeChange',
+                size: size
+            };
+            ws.send(JSON.stringify(message));
+        }
+
+        // Disminuir tamaño de fuente y enviar mensaje al servidor
+        function decreaseSize() {
+            fontSize = Math.max(10, fontSize - 2);  // Evita que el tamaño de fuente sea menor a 10px
+            const size = fontSize + 'px';
+            const message = {
+                type: 'sizeChange',
+                size: size
+            };
+            ws.send(JSON.stringify(message));
+        }
+
+        // Actualizar el color del texto en función del color de fondo
+        function updateContrastColor(bgColor) {
+            const isDark = bgColor === 'black';
+            const textColor = isDark ? 'white' : 'black';
+            document.getElementById('titulo').style.color = textColor;
+            document.getElementById('parrafo').style.color = textColor;
+        }
+
+        // Alternar entre fondo blanco y negro, y enviar mensaje al servidor
+        function toggleBackground() {
+            backgroundColor = backgroundColor === 'white' ? 'black' : 'white';
+            const message = {
+                type: 'backgroundChange',
+                backgroundColor: backgroundColor
+            };
+            ws.send(JSON.stringify(message));
+        }
+    </script>
+</body>
+</html>
+
+
+
